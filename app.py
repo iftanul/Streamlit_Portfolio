@@ -1,171 +1,151 @@
 import streamlit as st
 import base64
+from pathlib import Path
 
-# 1. Halaman
+# 1. KONFIGURASI HALAMAN
 st.set_page_config(
-    page_title="Iftanul Ibnu | Data Science Portfolio",
+    page_title="Iftanul Ibnu | Portfolio",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2. Load gambar base64
-def get_base64(bin_file):
+# 2. FUNGSI LOAD GAMBAR (Supaya Aman)
+def get_base64_image(image_path):
     try:
-        with open(bin_file, 'rb') as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
-    except Exception:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except Exception as e:
         return None
 
-# Load foto profil
+# Load Foto
 img_path = "assets/profile.jpg"
-img_base64 = get_base64(img_path)
+img_base64 = get_base64_image(img_path)
 
-# 3. Custom CSS
-st.markdown(f"""
+# 3. CSS "NUCLEAR" (PENYELESAIAN MASALAH VISUAL)
+st.markdown("""
     <style>
-    /* --- MENGATASI PANAH SIDEBAR YANG TIDAK TERLIHAT --- */
-    /* Mengubah warna panah sidebar menjadi Putih Terang */
-    [data-testid="stSidebarCollapseButton"] svg {{
+    /* --- PERBAIKAN PANAH SIDEBAR (FORCE WHITE) --- */
+    /* Kita targetkan path SVG-nya langsung agar warnanya putih */
+    [data-testid="stSidebarCollapseButton"] > span > svg > path {
         fill: white !important;
         stroke: white !important;
-        width: 30px;
-        height: 30px;
-        transition: 0.3s;
-    }}
-    
-    /* Memberi efek glow hijau saat panah di-hover */
-    [data-testid="stSidebarCollapseButton"]:hover svg {{
-        fill: #9EE05B !important;
-        filter: drop-shadow(0px 0px 8px #9EE05B);
-    }}
+    }
+    /* Backup selector jika struktur browser beda */
+    button[kind="header"] svg path {
+        fill: white !important;
+        stroke: white !important;
+    }
 
-    /* Menghilangkan header putih bawaan Streamlit */
-    [data-testid="stHeader"] {{
-        background-color: rgba(0,0,0,0);
-    }}
-    
-    /* Background utama hitam */
-    .stApp {{
-        background-color: #0E1117;
+    /* --- BACKGROUND GELAP (GREY THEME) --- */
+    .stApp {
+        background-color: #1A1A1A;
         color: white;
-    }}
+    }
+    
+    /* Header Transparan */
+    [data-testid="stHeader"] {
+        background-color: transparent;
+    }
 
     /* Sidebar Gelap */
-    [data-testid="stSidebar"] {{
-        background-color: #161B22;
-        border-right: 1px solid #30363d;
-    }}
+    [data-testid="stSidebar"] {
+        background-color: #111111;
+        border-right: 1px solid #333;
+    }
     
-    /* Warna teks menu navigasi otomatis */
-    [data-testid="stSidebarNavItems"] span {{
-        color: white !important;
-        font-weight: 500;
-    }}
+    /* Teks Navigasi Sidebar */
+    [data-testid="stSidebarNavItems"] span {
+        color: #E0E0E0 !important;
+    }
 
-    /* --- STYLING KONTEN UTAMA --- */
-    .main-title {{
-        font-size: 4.2rem;
-        font-weight: 800;
-        line-height: 1.1;
-        margin-bottom: 20px;
-        color: white;
-    }}
-
-    .highlight {{
-        color: #9EE05B;
-    }}
-
-    .sub-title {{
-        font-size: 1.2rem;
-        color: #B0B0B0;
-        max-width: 550px;
-        line-height: 1.6;
-        margin-bottom: 40px;
-    }}
-
-    /* Styling Tombol Hijau */
-    .stButton>button {{
-        background-color: #9EE05B;
+    /* --- TOMBOL UTAMA --- */
+    .stButton > button {
+        background-color: #9EE05B !important; /* Hijau Neon */
         color: #000000 !important;
-        font-weight: 700;
-        border-radius: 10px;
-        border: none;
-        padding: 0.8rem 2.5rem;
-        font-size: 1.1rem;
-        transition: 0.4s;
-    }}
+        font-weight: bold !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 0.6rem 2rem !important;
+        transition: all 0.3s ease;
+    }
     
-    .stButton>button:hover {{
-        background-color: #ffffff;
-        transform: translateY(-5px);
-    }}
+    .stButton > button:hover {
+        background-color: white !important;
+        transform: scale(1.05);
+    }
 
-    /* FOTO PROFIL */
-    .img-container {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-    }}
-
-    .profile-pic {{
-        width: 380px;
-        height: 380px;
-        object-fit: cover;
-        object-position: center;
-        border-radius: 50%;
-        border: 6px solid #9EE05B;
+    /* --- FOTO PROFIL (HTML MURNI) --- */
+    /* Ini style untuk tag <img> HTML, bukan st.image */
+    .profile-img-html {
+        width: 350px;
+        height: 350px;
+        object-fit: cover;        /* Memotong gambar agar pas frame */
+        object-position: top;     /* Fokus ke wajah bagian atas */
+        border-radius: 50%;       /* Membuat lingkaran */
+        border: 5px solid #9EE05B;
         display: block;
-        margin: auto:
-        padding: 0;
-    }}
+        margin-left: auto;
+        margin-right: auto;
+        box-shadow: 0px 0px 20px rgba(158, 224, 91, 0.3);
+    }
+    
+    /* Typography */
+    .main-title { font-size: 4rem; font-weight: 800; line-height: 1.2; color: white; }
+    .highlight { color: #9EE05B; }
     </style>
     """, unsafe_allow_html=True)
 
-# 4. SIDEBAR
+# 4. SIDEBAR (KOSONGKAN AGAR BERSIH)
 with st.sidebar:
-    st.write("")
+    st.write("") 
 
-# 5. MAIN LAYOUT
-st.write("##")
+# 5. LAYOUT UTAMA
+st.write("##") # Spacer atas
 
-col1, col2 = st.columns([1.3, 1], gap="large")
+col1, col2 = st.columns([1.5, 1], gap="large")
 
 with col1:
-    st.write("###") 
-    st.markdown('<p style="font-size: 1.5rem; font-weight: 400; margin-bottom: 0;">Hi, I\'m Ibnu</p>', unsafe_allow_html=True)
+    st.markdown('<br>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size: 1.5rem; color:#CCC; margin-bottom:0;">Hi, I\'m Ibnu</p>', unsafe_allow_html=True)
     st.markdown('<h1 class="main-title">I\'m <span class="highlight">Data Science</span> & Data Analyst.</h1>', unsafe_allow_html=True)
     
     st.markdown('''
-        <p class="sub-title">
-        Saya adalah Data Scientist yang berfokus pada analisis data dan machine learning untuk menghasilkan insight
-        yang berdampak pada pengambilan keputusan.
+        <p style="font-size: 1.2rem; color: #BBB; line-height: 1.6;">
+        Membantu bisnis mengambil keputusan berbasis data melalui 
+        Machine Learning, Predictive Analytics, dan Visualisasi yang efektif.
         </p>
     ''', unsafe_allow_html=True)
     
-    if st.button("My Projects ➔"):
-        st.switch_page("pages/2_Projects.py")
+    st.write("##")
+    
+    # --- LOGIKA TOMBOL PINDAH HALAMAN ---
+    if st.button("Lihat Project Saya ➔"):
+        # Cek apakah file tujuannya benar-benar ada
+        project_file = Path("pages/2_Projects.py")
+        if project_file.is_file():
+            st.switch_page("pages/2_Projects.py")
+        else:
+            st.error("⚠️ Error: File 'pages/2_Projects.py' tidak ditemukan!")
+            st.info("Pastikan kamu punya folder bernama 'pages' (huruf kecil) dan file '2_Projects.py' di dalamnya.")
 
 with col2:
+    # --- CARA RENDER GAMBAR AGAR BULAT SEMPURNA (HTML) ---
     if img_base64:
-        st.markdown(f'''
-            <div class="img-container">
-                <img src="data:image/png;base64,{img_base64}" class="profile-pic">
-            </div>
-        ''', unsafe_allow_html=True)
+        st.markdown(
+            f'<img src="data:image/png;base64,{img_base64}" class="profile-img-html">',
+            unsafe_allow_html=True
+        )
     else:
-        st.markdown('''
-            <div class="img-container">
-                <div style="width:380px; height:380px; border-radius:50%; border:6px solid #9EE05B; 
-                display:flex; align-items:center; justify-content:center; color:#9EE05B;">
-                    <p style="text-align:center;">profile.jpg not found</p>
-                </div>
+        # Placeholder jika gambar rusak/tidak ada
+        st.markdown("""
+            <div style="width:350px; height:350px; border-radius:50%; border:5px dashed #9EE05B; 
+            display:flex; align-items:center; justify-content:center; color:#9EE05B; margin:auto;">
+                <p style="text-align:center;">Foto tidak ditemukan<br>Cek folder assets/</p>
             </div>
-        ''', unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
 # 6. FOOTER
 st.markdown("<br><br><br>", unsafe_allow_html=True)
 st.divider()
-st.markdown("<p style='text-align: center; color: #555;'>© 2026 Ibnu. Built with Python & Streamlit</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #555;'>© 2026 Ibnu Portfolio. Powered by Streamlit</p>", unsafe_allow_html=True)
