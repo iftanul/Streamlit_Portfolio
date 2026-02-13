@@ -12,12 +12,11 @@ def load_model():
         with open(model_path, 'rb') as file:
             return pickle.load(file)
     except Exception as e:
-        # Jika gagal load, return None agar tidak crash
         return None
 
 # --- FUNGSI UTAMA VIEW ---
 def run(back_callback):
-    # HEADER & NAVIGASI
+    # HEADER
     col_a, col_b = st.columns([1, 6])
     with col_a:
         if st.button("⬅️ Back", use_container_width=True):
@@ -33,7 +32,7 @@ def run(back_callback):
         "💼 Business Case", "📊 EDA & Insights", "🤖 Model Performance", "🔮 Live Simulator"
     ])
     
-    # --- ISI TAB 1-3 (Summary) ---
+    # --- ISI TAB 1-3 (Sama seperti sebelumnya) ---
     with tab1:
         st.info("ℹ️ Buka Tab 'Live Simulator' untuk mencoba prediksi.")
         st.markdown("### 📌 Executive Summary")
@@ -53,10 +52,10 @@ def run(back_callback):
         m2.metric("Recall", "77%")
         m3.metric("ROC AUC", "0.96")
 
-    # --- TAB 4: SIMULATOR ---
+    # --- TAB 4: SIMULATOR (STRICT 0 or 1) ---
     with tab4:
         st.markdown("### 🔮 Prediction Simulator")
-        st.write("Masukkan profil nasabah untuk memprediksi risiko churn.")
+        st.write("Simulator ini menggunakan Model XGBoost untuk memprediksi Class 0 (Aman) atau 1 (Churn).")
         
         pipeline = load_model()
         
@@ -65,7 +64,7 @@ def run(back_callback):
             c_in1, c_in2, c_in3 = st.columns(3)
             with c_in1:
                 gender = st.selectbox("Gender", ["M", "F"])
-                age_grp = st.selectbox("Age Group", ["Young", "Adult", "Senior"])
+                age_grp = st.selectbox("Age Group", ["Young", "Adult", "Senior"]) # Dummy
                 marital = st.selectbox("Marital Status", ["Married", "Single", "Divorced", "Unknown"])
                 tenure = st.slider("Tenure (Bulan)", 0, 60, 36)
             with c_in2:
@@ -79,12 +78,12 @@ def run(back_callback):
                 revolving = st.number_input("Saldo Kredit ($)", 0, 3000, 1000)
                 util_ratio = st.slider("Utilisasi Limit", 0.0, 1.0, 0.1)
 
-            predict_btn = st.button("🔍 Cek Risiko Churn", use_container_width=True)
+            predict_btn = st.button("🔍 Prediksi Status Nasabah", use_container_width=True)
 
         # --- LOGIKA PREDIKSI ---
         if predict_btn:
-            churn_prob = 0.0
-            prediction_success = False
+            prediction_result = None # 0 atau 1
+            source = ""
 
             # 1. Coba Pakai Model Asli
             if pipeline:
@@ -103,41 +102,40 @@ def run(back_callback):
                     }])
                     input_df.columns = [x.lower() for x in input_df.columns]
                     
-                    churn_prob = pipeline.predict_proba(input_df)[0][1]
-                    prediction_success = True
-                except:
-                    prediction_success = False
+                    # --- PAKAI .predict() (BUKAN PROBA) ---
+                    prediction_result = pipeline.predict(input_df)[0]
+                    source = "✅ AI Model Prediction"
+                except Exception as e:
+                    prediction_result = None # Gagal
 
-            # 2. Fallback ke Logika Bisnis (Jika model gagal/loading)
-            # Ini PENTING agar user tidak melihat error page jika ada masalah teknis
-            if not prediction_success:
-                base_score = 0.10
-                if trans_ct < 40: base_score += 0.35
-                if inactive > 2: base_score += 0.25
-                if revolving < 500: base_score += 0.15
-                if contacts > 3: base_score += 0.10
-                churn_prob = min(base_score, 0.98)
+            # 2. Fallback ke Demo (Hanya jika model gagal)
+            if prediction_result is None:
+                # Logika Manual Sederhana
+                if trans_ct < 40 or inactive > 3:
+                    prediction_result = 1 # Churn
+                else:
+                    prediction_result = 0 # Aman
+                source = "⚠️ Simulation Logic (Model Error)"
 
-            # --- TAMPILAN HASIL ---
+            # --- TAMPILAN HASIL (0 atau 1) ---
             st.divider()
+            
+            # Tampilkan Sumber Data (Jujur)
+            st.caption(f"Source: {source}")
+
             col_res1, col_res2 = st.columns([1, 2])
             
             with col_res1:
-                if churn_prob > 0.5:
-                    st.error("HIGH RISK (CHURN)")
-                    st.metric("Probability", f"{churn_prob*100:.1f}%")
+                if prediction_result == 1:
+                    st.error("PREDIKSI: CHURN (1)")
+                    st.write("Nasabah berisiko pergi.")
                 else:
-                    st.success("LOW RISK (AMAN)")
-                    st.metric("Probability", f"{churn_prob*100:.1f}%")
-                
-                if not prediction_success:
-                    st.caption("⚠️ *Menggunakan Simulasi Logika (Model Loading Issue)*")
-
+                    st.success("PREDIKSI: STAY (0)")
+                    st.write("Nasabah aman.")
+            
             with col_res2:
                 st.info("💡 **Rekomendasi Strategis:**")
-                if churn_prob > 0.7:
-                    st.write("🚨 **Urgent:** Segera hubungi nasabah! Tawarkan insentif (Cashback/Diskon).")
-                elif churn_prob > 0.4:
-                    st.write("⚠️ **Waspada:** Kirim email marketing personalisasi. Pantau transaksi.")
+                if prediction_result == 1:
+                    st.write("🚨 **Action:** Segera hubungi nasabah! Berikan penawaran retensi.")
                 else:
-                    st.write("✅ **Pertahankan:** Tawarkan produk cross-selling.")
+                    st.write("✅ **Action:** Tawarkan produk tambahan (Cross-sell).")
